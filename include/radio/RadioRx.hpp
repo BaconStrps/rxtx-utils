@@ -1,13 +1,14 @@
 
 
-
+namespace csics::radio {
 
 class RadioRx {
-
     public:
-        RadioRx();
+        RadioRx() = default;
+        virtual ~RadioRx() = default;
 
-        virtual ~RadioRx();
-
+        virtual bool open() = 0;
 
 };
+
+};  // namespace csics::radio
