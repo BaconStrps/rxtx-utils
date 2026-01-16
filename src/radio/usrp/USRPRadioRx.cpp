@@ -1,4 +1,5 @@
 #include <csics/radio/usrp/USRPRadioRx.hpp>
+#include "csics/radio/Radio.hpp"
 
 namespace csics::radio {
 
@@ -102,6 +103,22 @@ Timestamp USRPRadioRx::set_configuration(const RadioConfiguration& config) noexc
     if (config.gain != current_config_.gain) set_gain(config.gain);
     current_config_ = config;
     return Timestamp::now();
+}
+
+RadioConfiguration USRPRadioRx::get_configuration() const noexcept {
+    return current_config_;
+}
+
+RadioDeviceInfo USRPRadioRx::get_device_info() const noexcept {
+    RadioDeviceInfo info {};
+    auto freq_range = usrp_->get_rx_freq_range();
+    info.frequency_range.min = freq_range.start();
+    info.frequency_range.max = freq_range.stop();
+    auto rate_range = usrp_->get_rx_rates();
+    info.sample_rate_range.min = rate_range.start();
+    info.sample_rate_range.max = rate_range.stop();
+    info.max_gain = usrp_->get_rx_gain_range().stop();
+    return info;
 }
 
 void USRPRadioRx::rx_loop() noexcept {
