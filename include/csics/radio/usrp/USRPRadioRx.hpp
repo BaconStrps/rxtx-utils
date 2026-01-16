@@ -3,6 +3,7 @@
 #include <uhd/usrp/multi_usrp.hpp>
 
 namespace csics::radio {
+
 class USRPRadioRx : public IRadioRx {
    public:
     explicit USRPRadioRx(const RadioDeviceArgs& device_args);

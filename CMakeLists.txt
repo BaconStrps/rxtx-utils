@@ -25,6 +25,7 @@ endif()
 if (CSICS_BUILD_QUEUE)
     list(APPEND COMPONENTS CSICS::queue)
 endif()
+
 if (CSICS_BUILD_RADIO)
     list(APPEND COMPONENTS CSICS::radio)
 endif()

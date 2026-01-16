@@ -5,6 +5,7 @@
 #ifdef CSICS_USE_UHD
 #include <uhd/types/device_addr.hpp>
 #endif
+
 namespace csics::radio {
 /** @brief Configuration parameters for the radio receiver. */
 struct RadioConfiguration {

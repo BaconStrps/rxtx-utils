@@ -1,11 +1,11 @@
 #pragma once
-#include <csics/radio/Radio.hpp>
-#include <csics/queue/SPSCQueue.hpp>
 #include <memory>
 
-#ifdef CSICS_USE_UHD
 #include <uhd/types/device_addr.hpp>
-#endif
+
+#include <csics/radio/Radio.hpp>
+#include <csics/queue/SPSCQueue.hpp>
+
 
 namespace csics::radio {
 
@@ -65,9 +65,9 @@ class IRadioRx {
         const RadioConfiguration& config) noexcept = 0;
     virtual RadioDeviceInfo get_device_info() const noexcept = 0;
 
-    template <RadioDeviceArgsConvertible T>
+    [[maybe_unused]]
     static std::unique_ptr<IRadioRx> create_radio_rx(
-        T device_args, const RadioConfiguration& config);
+        const RadioDeviceArgs& device_args, const RadioConfiguration& config);
 
     struct StartStatus {
         enum class Code {
@@ -89,5 +89,4 @@ class IRadioRx {
         uint32_t reserved;
     };
 };
-
 };  // namespace csics::radio
