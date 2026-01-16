@@ -1,7 +1,7 @@
 
-set(SOURCES RadioRx.cpp Radio.cpp)
-set(LIBRARIES queue)
-set(DEFINITIONS)
+list(SOURCES RadioRx.cpp Radio.cpp)
+list(LIBRARIES queue)
+list(DEFINITIONS)
 
 set(COMPILE_OPTIONS
     $<$<IN_LIST:$<CXX_COMPILER_ID>,GNU;Clang>:-Wall -Wextra -Wpedantic>
