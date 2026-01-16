@@ -12,6 +12,7 @@ endif()
 option(CSICS_BUILD_QUEUE "Build the queue module" ON)
 option(CSICS_BUILD_RADIO "Build the radio module" ON)
 option(CSICS_USE_UHD "Use the UHD library for USRP support" ON)
+option(CSICS_ENABLE_TESTS "Enable building tests" ON)
 
 set(INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/include)
 
@@ -41,3 +42,6 @@ message(STATUS "  Build type: ${CMAKE_BUILD_TYPE}")
 message(STATUS "  Components: ${COMPONENTS}")
 message(STATUS "  UHD support: ${CSICS_USE_UHD}")
 
+if (CSICS_ENABLE_TESTS)
+    add_subdirectory(test)
+endif()

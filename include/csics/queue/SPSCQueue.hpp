@@ -79,12 +79,12 @@ class SPSCQueue {
 
    public:
     struct ReadSlot {
-        const std::byte* data;
+        std::byte* data;
         size_t size;
 
         template <typename T>
         const T& as() {
-            return *static_cast<const T*>(data);
+            return *reinterpret_cast<const T*>(data);
         }
     };
 
@@ -219,8 +219,9 @@ class SPSCQueueBlockAdapter {
         if (!acquired) {
             return false;
         }
+        auto data = const_cast<std::byte*>(raw_slot.data);
 
-        slot.header = raw_slot.template as<Header>();
+        slot.header = reinterpret_cast<Header*>(const_cast<std::byte*>(raw_slot.data));
         slot.data = reinterpret_cast<Data*>(raw_slot.data + sizeof(Header));
         slot.size = (raw_slot.size - sizeof(Header)) / sizeof(Data);
         return true;
@@ -233,7 +234,7 @@ class SPSCQueueBlockAdapter {
             return false;
         }
 
-        slot.header = raw_slot.template as<Header>();
+        slot.header = reinterpret_cast<Header*>(raw_slot.data);
         slot.data = reinterpret_cast<Data*>(raw_slot.data + sizeof(Header));
         slot.size = (raw_slot.size - sizeof(Header)) / sizeof(Data);
         return true;
