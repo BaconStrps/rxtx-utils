@@ -1,6 +1,7 @@
 #include <csics/queue/SPSCQueue.hpp>
 #include <gtest/gtest.h>
 #include <memory>
+#include <cstring>
 #include <random>
 // right now, instantation testing
 struct HeaderTest {
@@ -120,20 +121,31 @@ TEST(CSICSQueueTests, FuzzReadWriteMultiThreaded) {
     SPSCQueue q(1053);
     std::size_t iterations = 10000000;
 
-    std::thread([&]() {
+    auto t1 = std::thread([&]() {
         for (std::size_t i = 0; i < iterations; i++) {
-            ASSERT_EQ(q.acquire_write(ws, sizeof(std::size_t)), SPSCError::None);
+            auto result = q.acquire_write(ws, sizeof(std::size_t));
+            if (result == SPSCError::FULL) {
+                i--;
+                continue;
+            }
             std::memcpy(ws.data, &i, sizeof(std::size_t));
             ASSERT_EQ(q.commit_write(ws), SPSCError::None);
         }
     });
 
-     std::thread([&]() {
+     auto t2 = std::thread([&]() {
         for (std::size_t i = 0; i < iterations; i++) {
-            ASSERT_EQ(q.acquire_read(rs), SPSCError::None);
+            auto result = q.acquire_read(rs);
+            if (result == SPSCError::EMPTY) {
+                i--;
+                continue;
+            }
             std::size_t val = *reinterpret_cast<std::size_t*>(rs.data);
             ASSERT_EQ(val, i);
             ASSERT_EQ(q.commit_read(rs), SPSCError::None);
         }
     });
+
+     t1.join();
+     t2.join();
 }
