@@ -4,6 +4,7 @@
 #include <cstring>
 #include <memory>
 #include <random>
+#include <thread>
 // right now, instantation testing
 struct HeaderTest {
     int a;

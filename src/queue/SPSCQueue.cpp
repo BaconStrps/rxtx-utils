@@ -2,6 +2,7 @@
 #include <csics/queue/SPSCQueue.hpp>
 #include <cstring>
 #include <new>
+#include <algorithm>
 
 namespace csics::queue {
 
