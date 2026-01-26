@@ -2,6 +2,7 @@
 #include <memory>
 #include <csics/radio/Radio.hpp>
 #include <csics/queue/SPSCQueue.hpp>
+#include <optional>
 
 
 namespace csics::radio {
