@@ -27,6 +27,7 @@ if (CSICS_BUILD_IO)
     if (CSICS_USE_ZLIB)
         list(APPEND TESTS io/zlib_compression_test.cpp)
     endif()
+    list(APPEND TESTS io/base64_encoding_test.cpp)
 endif()
 
 add_executable(tests ${TESTS})

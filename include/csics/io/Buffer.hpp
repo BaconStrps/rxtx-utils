@@ -6,16 +6,16 @@ namespace csics::io {
 class BufferView {
    public:
     explicit BufferView(void* buf, std::size_t size)
-        : buf_(reinterpret_cast<unsigned char*>(buf)), size_(size) {};
+        : buf_(reinterpret_cast<uint8_t*>(buf)), size_(size) {};
     BufferView()
         : buf_(nullptr), size_(0){};
 
     template <typename T>
     operator std::span<T>() const noexcept {
-        return std::span<T>(reinterpret_cast<T*>(buf_), size_);
+        return std::span<T>(reinterpret_cast<T*>(buf_), size_ / sizeof(T));
     };
 
-    unsigned char* data() const noexcept { return buf_; }
+    uint8_t* data() const noexcept { return buf_; }
     std::size_t size() const noexcept { return size_; }
 
     bool empty() const noexcept { return size_ == 0; }
@@ -48,8 +48,12 @@ class BufferView {
         return *this;
     };
 
+    uint8_t& operator[](std::size_t index) noexcept {
+        return buf_[index];
+    }
+
    private:
-    unsigned char* buf_;
+    uint8_t* buf_;
     std::size_t size_;
 };
 };  // namespace csics::io

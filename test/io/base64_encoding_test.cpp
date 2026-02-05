@@ -1,0 +1,120 @@
+
+#include <gtest/gtest.h>
+#include <gmock/gmock.h>
+#include <csics/io/encdec/Base64.hpp>
+#include <csics/io/Buffer.hpp>
+#include <fstream>
+#include <vector>
+#include <random>
+#include "../test_utils.hpp"
+#include "compression_utils.hpp"
+
+TEST(CSICSEncDecTests, Base64EncodingTest) {
+    using namespace csics::io::encdec;
+    using namespace csics::io;
+
+    Base64Encoder encoder;
+
+    std::vector<uint8_t> input_data = { 'M', 'a', 'n' };
+    BufferView input_buffer(input_data.data(), input_data.size());
+    std::vector<uint8_t> output_data(4);
+    BufferView output_buffer(output_data.data(), output_data.size());
+    EXPECT_EQ(output_buffer.size(), 4);
+    EXPECT_EQ(input_buffer.size(), 3);
+    EncodingResult result = encoder.encode(input_buffer, output_buffer);
+    EXPECT_EQ(result.status, EncodingStatus::Ok);
+    EXPECT_EQ(result.processed, 3);
+    EXPECT_EQ(result.output, 4);
+    EXPECT_EQ(output_data[0], 'T');
+    EXPECT_EQ(output_data[1], 'W');
+    EXPECT_EQ(output_data[2], 'F');
+    EXPECT_EQ(output_data[3], 'u');
+}
+
+
+TEST(CSICSEncDecTests, Base64EncodingWithPaddingTest) {
+    using namespace csics::io::encdec;
+    using namespace csics::io;
+
+    Base64Encoder encoder;
+
+    std::vector<uint8_t> input_data = { 'M', 'a' };
+    BufferView input_buffer(input_data.data(), input_data.size());
+    std::vector<uint8_t> output_data(4);
+    BufferView output_buffer(output_data.data(), output_data.size());
+    EXPECT_EQ(output_buffer.size(), 4);
+    EXPECT_EQ(input_buffer.size(), 2);
+    EncodingResult result = encoder.encode(input_buffer, output_buffer);
+    EXPECT_EQ(result.status, EncodingStatus::Ok);
+    EXPECT_EQ(result.processed, 2);
+    EXPECT_EQ(result.output, 0); // No output yet, need to finish for padding
+
+    // Finish encoding to handle padding
+    BufferView empty_input(nullptr, 0);
+    result = encoder.finish(empty_input, output_buffer);
+    EXPECT_EQ(result.status, EncodingStatus::Ok);
+    EXPECT_EQ(result.processed, 0);
+    EXPECT_EQ(result.output, 4);
+    EXPECT_EQ(output_data[0], 'T');
+    EXPECT_EQ(output_data[1], 'W');
+    EXPECT_EQ(output_data[2], 'E');
+    EXPECT_EQ(output_data[3], '=');
+
+    input_data = {'M'};
+    input_buffer = BufferView(input_data.data(), input_data.size());
+    output_buffer = BufferView(output_data.data(), output_data.size());
+    EXPECT_EQ(output_buffer.size(), 4);
+    EXPECT_EQ(input_buffer.size(), 1);
+    result = encoder.encode(input_buffer, output_buffer);
+    EXPECT_EQ(result.status, EncodingStatus::Ok);
+    EXPECT_EQ(result.processed, 1);
+    EXPECT_EQ(result.output, 0); // No output yet, need to finish for padding
+
+    // Finish encoding to handle padding
+    result = encoder.finish(empty_input, output_buffer);
+    EXPECT_EQ(result.status, EncodingStatus::Ok);
+    EXPECT_EQ(result.processed, 0);
+    EXPECT_EQ(result.output, 4);
+    EXPECT_EQ(output_data[0], 'T');
+    EXPECT_EQ(output_data[1], 'Q');
+    EXPECT_EQ(output_data[2], '=');
+    EXPECT_EQ(output_data[3], '=');
+}
+
+TEST(CSICSEncDecTests, Base64EncodingFuzzTest) {
+    using namespace csics::io::encdec;
+    using namespace csics::io;
+    std::filesystem::path input_path = "test_b64.dat";
+    Base64Encoder encoder;
+    BufferView input;
+    BufferView output;
+    for (size_t i = 0; i < 100; i++) {
+        auto rand_size = std::rand() % (size_t)4e6;
+        auto generated_bytes = generate_random_bytes(rand_size);
+        std::vector<uint8_t> output_buf(rand_size * float(1.35), 0);
+        input = BufferView(generated_bytes.get(), rand_size);
+        output = BufferView(output_buf.data(), output_buf.size());
+
+        auto r = encoder.finish(input, output);
+        ASSERT_THAT(r.status, EncodingStatus::Ok);
+        output = BufferView(output.data(), r.output);
+
+        std::ofstream o(input_path, std::ios::binary);
+        o.write((char*)input.data(), input.size());
+        o.close();
+
+        auto encoded_data = run_cmdline("base64 -i %s -o %s", input_path);
+        encoded_data.pop_back(); // has newline at the end
+
+        ASSERT_THAT(std::span<uint8_t>(output), ::testing::ElementsAreArray(encoded_data));
+
+        o.open(input_path.replace_extension(".txt"));
+        o.write((char*)output.data(), output.size());
+        o.close();
+        
+        auto decoded_data = run_cmdline("base64 -d -i %s -o %s", input_path.replace_extension(".txt"));
+
+        ASSERT_THAT(decoded_data, ::testing::ElementsAreArray(input.data(), input.size()));
+
+    }
+}

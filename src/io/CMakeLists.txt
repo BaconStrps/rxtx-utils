@@ -1,5 +1,6 @@
 set(SOURCES 
     Compressor.cpp
+    encdec/Base64Encoder.cpp
 )
 set(LIBS)
 set(HEADERS)

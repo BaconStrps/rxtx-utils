@@ -47,7 +47,7 @@ TEST(CSICSCompressionTests, ZSTDCompressorBasic) {
     outfile.close();
 
     std::vector<char> decompressed_data =
-        decompress_cmdline("zstd -d %s -o %s", "temp_compressed.zst");
+        run_cmdline("zstd -d %s -o %s", "temp_compressed.zst");
 
     ASSERT_EQ(decompressed_data.size(), data_size);
     ASSERT_THAT(decompressed_data,
