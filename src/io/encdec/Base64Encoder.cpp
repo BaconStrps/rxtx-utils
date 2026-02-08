@@ -25,8 +25,8 @@ static inline void get_4_chars(uint8_t* in, uint8_t* out) {
     (out)[3] = base64_table[(out)[3]];
 }
 
-static inline EncodingResult encode_b64_no_holdover(BufferView<> in,
-                                                    BufferView<> out,
+static inline EncodingResult encode_b64_no_holdover(BufferView in,
+                                                    BufferView out,
                                                     uint8_t holdover[3]) {
     uint8_t input[3];
     auto* in_ptr = in.data();
@@ -62,7 +62,7 @@ static inline EncodingResult encode_b64_no_holdover(BufferView<> in,
     return result;
 }
 
-static inline EncodingResult encode_64_1_holdover(BufferView<> in, BufferView<> out,
+static inline EncodingResult encode_64_1_holdover(BufferView in, BufferView out,
                                                   uint8_t holdover[3]) {
     if (in.size() < 2) {
         EncodingResult result{};
@@ -95,7 +95,7 @@ static inline EncodingResult encode_64_1_holdover(BufferView<> in, BufferView<> 
     return r;
 }
 
-static inline EncodingResult encode_64_2_holdover(BufferView<> in, BufferView<> out,
+static inline EncodingResult encode_64_2_holdover(BufferView in, BufferView out,
                                                   uint8_t holdover[3]) {
     if (in.size() < 1) {
         EncodingResult result{};
@@ -126,7 +126,7 @@ static inline EncodingResult encode_64_2_holdover(BufferView<> in, BufferView<> 
     return r;
 }
 
-EncodingResult Base64Encoder::encode(BufferView<> in, BufferView<> out) {
+EncodingResult Base64Encoder::encode(BufferView in, BufferView out) {
     EncodingResult result{};
     if (in.empty()) {
         result.processed = 0;
@@ -150,23 +150,24 @@ EncodingResult Base64Encoder::encode(BufferView<> in, BufferView<> out) {
     return result;
 }
 
-EncodingResult Base64Encoder::finish(BufferView<> in, BufferView<> out) {
+EncodingResult Base64Encoder::finish(BufferView in, BufferView out) {
     auto r = encode(in, out);
     if (r.status == EncodingStatus::OutputBufferFull) {
         return r;
     }
     out += r.output;
+    auto out_u8 = out.u8();
     // Handle padding
     switch (holdover_[0]) {
         case 1: {
-            if (out.size() < 3) {
+            if (out.size() < 4) {
                 r.status = EncodingStatus::OutputBufferFull;
                 return r;
             }
-            out.data()[0] = base64_table[holdover_[1] >> 2];
-            out.data()[1] = base64_table[(holdover_[1] & 0b00000011) << 4];
-            out.data()[2] = '=';
-            out.data()[3] = '=';
+            out_u8[0] = base64_table[holdover_[1] >> 2];
+            out_u8[1] = base64_table[(holdover_[1] & 0b00000011) << 4];
+            out_u8[2] = '=';
+            out_u8[3] = '=';
             break;
         }
         case 2: {
@@ -174,10 +175,10 @@ EncodingResult Base64Encoder::finish(BufferView<> in, BufferView<> out) {
                 r.status = EncodingStatus::OutputBufferFull;
                 return r;
             }
-            out.data()[0] = base64_table[holdover_[1] >> 2];
-            out.data()[1] = base64_table[((holdover_[1] & 0b00000011) << 4) | ((holdover_[2] & 0b11110000) >> 4)];
-            out.data()[2] = base64_table[(holdover_[2] & 0b00001111) << 2];
-            out.data()[3] = '=';
+            out_u8[0] = base64_table[holdover_[1] >> 2];
+            out_u8[1] = base64_table[((holdover_[1] & 0b00000011) << 4) | ((holdover_[2] & 0b11110000) >> 4)];
+            out_u8[2] = base64_table[(holdover_[2] & 0b00001111) << 2];
+            out_u8[3] = '=';
             break;
         }
     }

@@ -22,20 +22,21 @@ TEST(CSICSCompressionTests, ZSTDCompressorBasic) {
     auto input_data = generate_random_bytes(data_size);
     std::vector<unsigned char> compressed_data;
     compressed_data.resize(ZSTD_compressBound(data_size));
-    BufferView in_buffer(input_data.get(), data_size);
-    BufferView out_buffer(compressed_data.data(), compressed_data.size());
+    BufferView in_buffer(input_data);
+    BufferView out_buffer(compressed_data);
 
     CompressionResult result{};
     std::size_t size = 0;
 
-    result = compressor->compress_buffer(in_buffer.as<char>(), out_buffer.as<char>());
+    result = compressor->compress_buffer(in_buffer,
+                                         out_buffer);
     in_buffer += result.input_consumed;
     out_buffer += result.compressed;
 
     ASSERT_EQ(result.status, CompressionStatus::InputBufferFinished);
     size += result.compressed;
 
-    result = compressor->finish(in_buffer.as<char>(), out_buffer.as<char>());
+    result = compressor->finish(in_buffer, out_buffer);
 
     ASSERT_EQ(result.status, CompressionStatus::InputBufferFinished);
     size += result.compressed;
@@ -50,9 +51,7 @@ TEST(CSICSCompressionTests, ZSTDCompressorBasic) {
         run_cmdline("zstd -d %s -o %s", "temp_compressed.zst");
 
     ASSERT_EQ(decompressed_data.size(), data_size);
-    ASSERT_THAT(decompressed_data,
-                ::testing::ElementsAreArray(
-                    reinterpret_cast<char*>(input_data.get()), data_size));
+    ASSERT_THAT(input_data, ::testing::ElementsAreArray(decompressed_data));
 
     std::filesystem::remove("temp_compressed.zst");
 }

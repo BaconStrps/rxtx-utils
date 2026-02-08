@@ -15,10 +15,10 @@ TEST(CSICSCompressionTests, ZLIBCompressionTest) {
 
     auto generated_bytes = generate_random_bytes(1024 * 1024);
     std::vector<unsigned char> compressed_buffer(compressBound(1024 * 1024), 0);
-    BufferView output_view(compressed_buffer.data(), compressed_buffer.size());
-    BufferView input_view(generated_bytes.get(), 1024 * 1024);
+    BufferView output_view(compressed_buffer);
+    BufferView input_view(generated_bytes);
 
-    auto result = compressor->compress_buffer(input_view.as<char>(), output_view.as<char>());
+    auto result = compressor->compress_buffer(input_view, output_view);
 
     ASSERT_EQ(result.status, CompressionStatus::NeedsInput);
     ASSERT_NE(result.compressed, 0);      // Ensure progress was made
@@ -30,7 +30,7 @@ TEST(CSICSCompressionTests, ZLIBCompressionTest) {
     ASSERT_FALSE(output_view.empty());
     ASSERT_TRUE(input_view.empty());
 
-    result = compressor->finish(input_view.as<char>(), output_view.as<char>());
+    result = compressor->finish(input_view, output_view);
     output_view += result.compressed;
     auto compressed_size = output_view.uc() - compressed_buffer.data();
 
@@ -58,9 +58,8 @@ TEST(CSICSCompressionTests, ZLIBCompressionTest) {
         << "ZLIB did not return Z_STREAM_END. Error msg: " << stream.msg;
 
     ASSERT_THAT(
-        decompressed_data,
-        testing::ElementsAreArray(
-            reinterpret_cast<char*>(generated_bytes.get()), 1024 * 1024));
+        generated_bytes,
+        testing::ElementsAreArray(decompressed_data));
 
     inflateEnd(&stream);
 }

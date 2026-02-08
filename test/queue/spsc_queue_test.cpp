@@ -3,7 +3,6 @@
 
 #include <csics/queue/SPSCQueue.hpp>
 #include <cstring>
-#include <memory>
 #include <random>
 #include <thread>
 #include "../test_utils.hpp"
@@ -72,7 +71,7 @@ TEST(CSICSQueueTests, FuzzReadWriteSingleThreaded) {
         total_size += size;
         auto pattern = generate_random_bytes(size);
         ASSERT_EQ(q.acquire_write(ws, size), SPSCError::None);
-        std::memcpy(ws.data, pattern.get(), size);
+        std::memcpy(ws.data, pattern.data(), size);
         q.commit_write(std::move(ws));
         ASSERT_EQ(q.acquire_read(rs), SPSCError::None);
         ASSERT_EQ(rs.size, size)
@@ -81,7 +80,7 @@ TEST(CSICSQueueTests, FuzzReadWriteSingleThreaded) {
         ASSERT_THAT(std::span<const char>(
                         reinterpret_cast<const char*>(rs.data), rs.size),
                     ::testing::ElementsAreArray(
-                        reinterpret_cast<const char*>(pattern.get()), size))
+                        reinterpret_cast<const char*>(pattern.data()), size))
             << "Error on iteration " << i << " \nWith total size " << total_size
             << " \nws.data: " << ws.data << ", rs.data: " << rs.data;
         q.commit_read(std::move(rs));

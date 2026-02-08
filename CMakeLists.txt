@@ -29,13 +29,14 @@ set(COMPONENTS CSICS::core)
 set(CSICS_COMPILE_FLAGS
         $<$<IN_LIST:$<CXX_COMPILER_ID>,GNU;Clang>:-Wall -Wextra -Wpedantic>
         $<$<CXX_COMPILER_ID:MSVC>:/W4 /permissive->
-        $<$<AND:$<CONFIG:Debug>,$<IN_LIST:$<CXX_COMPILER_ID>,GNU;Clang>>: -g -fsanitize=address,undefined,leak -fsanitize-address-use-after-scope -fno-omit-frame-pointer>
+        $<$<AND:$<CONFIG:Debug>,$<IN_LIST:$<CXX_COMPILER_ID>,GNU;Clang>>: -g -O0 -fsanitize=address,undefined,leak -fsanitize-address-use-after-scope -fno-omit-frame-pointer>
         $<$<AND:$<CONFIG:Debug>,$<CXX_COMPILER_ID:MSVC>>:/fsanitize=address,undefined>
+        $<$<AND:$<CONFIG:Debug>,$<CXX_COMPILER_ID:AppleClang>>: -g -O0>
 )
 
 set(CMAKE_LINKER_FLAGS
         $<$<AND:$<CONFIG:Debug>,$<IN_LIST:$<CXX_COMPILER_ID>,GNU;Clang>>: -fsanitize=address,undefined,leak -fsanitize-address-use-after-scope -fno-omit-frame-pointer>
-        $<$<AND:$<CONFIG:Debug>,$<CXX_COMPILER_ID:MSVC>>:/fsanitize=address,undefined>
+        $<$<AND:$<CONFIG:Debug>,$<CXX_COMPILER_ID:MSVC>>:/fsanitize=address>
 )
 
 message(DEBUG "CSICS compile flags: ${CSICS_COMPILE_FLAGS}")
@@ -57,7 +58,6 @@ add_subdirectory(src)
 add_library(CSICS INTERFACE)
 target_include_directories(CSICS INTERFACE ${INCLUDE_DIR})
 target_link_libraries(CSICS INTERFACE ${COMPONENTS})
-target_link_options(CSICS INTERFACE ${CMAKE_LINKER_FLAGS})
 
 
 message(STATUS "CSICS build configuration:")
