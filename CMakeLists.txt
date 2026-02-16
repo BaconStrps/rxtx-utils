@@ -20,7 +20,7 @@ option(CSICS_USE_ZSTD "Use the ZSTD library for compression support" ${CSICS_BUI
 option(CSICS_USE_ZLIB "Use the ZLIB library for compression support" ${CSICS_BUILD_IO})
 option(CSICS_ENABLE_TESTS "Enable building tests" ${CSICS_BUILD_ALL})
 
-set(INCLUDE_DIR ${CMAKE_SOURCE_DIR}/include)
+set(INCLUDE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/include)
 set(CSICS_COMPILE_DEFINITIONS)
 include(cmake/deps.cmake)
 
