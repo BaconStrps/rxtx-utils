@@ -2,11 +2,15 @@
 
 #include <uhd/usrp/usrp.h>
 
+#include <iostream>
+
 namespace csics::radio {
 
 USRPRadioRx::~USRPRadioRx() {
     stop_stream();
     if (queue_ != nullptr) delete queue_;
+    if (rx_streamer_ != nullptr) uhd_rx_streamer_free(&rx_streamer_);
+    if (usrp_ != nullptr) uhd_usrp_free(&usrp_);
 };
 
 USRPRadioRx::USRPRadioRx(const RadioDeviceArgs& device_args)
@@ -38,17 +42,23 @@ USRPRadioRx::StartStatus USRPRadioRx::start_stream(
 
     block_len_ = stream_config.sample_length.get_num_samples(
         current_config_.sample_rate);
-    queue_ = new csics::queue::SPSCQueue(block_len_ * 4 *
-                                         sizeof(std::complex<int16_t>));
+    queue_ = new csics::queue::SPSCQueue(
+        (block_len_ * sizeof(std::complex<int16_t>) + sizeof(BlockHeader)) * 4);
     uhd_stream_args_t stream_args{};
+    std::vector<size_t> channel_list{0};
     stream_args.otw_format = const_cast<char*>("sc16");
     stream_args.cpu_format = const_cast<char*>("sc16");
+    stream_args.args = const_cast<char*>("");
     stream_args.n_channels = 1;
-    stream_args.channel_list = {0};
+    stream_args.channel_list = channel_list.data();
     auto err = uhd_usrp_get_rx_stream(usrp_, &stream_args, rx_streamer_);
     if (err != UHD_ERROR_NONE) {
         delete queue_;
         queue_ = nullptr;
+        char err_str[256];
+        uhd_get_last_error(err_str, 256);
+        std::cerr << "Failed to get RX streamer from USRP device. Error code: "
+                  << err << ", Error message: " << err_str << std::endl;
         return {StartStatus::Code::HARDWARE_FAILURE, std::nullopt};
     }
 
@@ -156,25 +166,54 @@ void USRPRadioRx::rx_loop() noexcept {
     SDRRawSample* base = nullptr;
     BlockHeader* hdr = nullptr;
     uhd_rx_metadata_handle md;
+    std::cerr << "Starting RX loop" << std::endl;
+    uhd_stream_cmd_t cmd{};
+    cmd.stream_mode = UHD_STREAM_MODE_START_CONTINUOUS;
+    cmd.stream_now = true;
+    const std::size_t buffer_size = block_len_ * sizeof(SDRRawSample) + sizeof(BlockHeader);
+    uhd_rx_streamer_issue_stream_cmd(rx_streamer_, &cmd);
     while (!stop_signal_.load(std::memory_order_acquire)) {
         queue::SPSCQueue::WriteSlot slot{};
-        while (queue_->acquire_write(slot, block_len_) !=
+        while (queue_->acquire_write(slot, buffer_size) !=
                queue::SPSCError::None) {
         }
+        std::cerr << "Acquired write slot of size " << slot.size << std::endl;
         slot.as_block(hdr, base);
         hdr->timestamp_ns = Timestamp::now();
         hdr->num_samples = slot.size;
         uhd_rx_metadata_make(&md);
         size_t num_rx_samps = 0;
-        while (cursor < base + slot.size) {
-            uhd_rx_streamer_recv(
+        std::cerr << "base: " << static_cast<void*>(base)
+                  << ", slot size: " << slot.size << std::endl;
+        cursor = base;
+        while (cursor < base + block_len_) {
+            auto err = uhd_rx_streamer_recv(
                 rx_streamer_, reinterpret_cast<void**>(&slot.data),
-                slot.size - (cursor - base), &md, 0.1, false, &num_rx_samps);
+                (base + block_len_) - cursor, &md, 0.1, false, &num_rx_samps);
+            if (num_rx_samps > 0) {
+                std::cerr << "Received " << num_rx_samps
+                          << " samples from USRP device" << std::endl;
+            } else {
+                std::cerr
+                    << "No samples received from USRP device in this iteration"
+                    << std::endl;
+            }
+            if (err != UHD_ERROR_NONE) [[unlikely]] {
+                char err_str[256];
+                uhd_get_last_error(err_str, 256);
+                std::cerr
+                    << "Error receiving samples from USRP device. Error code: "
+                    << err << ", Error message: " << err_str << std::endl;
+                break;
+            }
             cursor += num_rx_samps;
         }
 
         queue_->commit_write(std::move(slot));
+        std::cerr << "Committed write slot of size " << slot.size << std::endl;
     }
+    cmd.stream_mode = UHD_STREAM_MODE_STOP_CONTINUOUS;
+    uhd_rx_streamer_issue_stream_cmd(rx_streamer_, &cmd);
     uhd_rx_metadata_free(&md);
 }
 

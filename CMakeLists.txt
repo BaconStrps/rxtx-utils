@@ -39,6 +39,11 @@ set(CMAKE_LINKER_FLAGS
         $<$<AND:$<CONFIG:Debug>,$<CXX_COMPILER_ID:MSVC>>:/fsanitize=address>
 )
 
+set(CSICS_DEBUG_LIBS
+        $<$<AND:$<CONFIG:Debug>,$<IN_LIST:$<CXX_COMPILER_ID>,GNU;Clang>>: -fsanitize=address,undefined,leak>
+        $<$<AND:$<CONFIG:Debug>,$<CXX_COMPILER_ID:MSVC>>:/fsanitize=address>
+)
+
 message(DEBUG "CSICS compile flags: ${CSICS_COMPILE_FLAGS}")
 
 if (CSICS_BUILD_QUEUE)
@@ -57,7 +62,9 @@ add_subdirectory(src)
 
 add_library(CSICS INTERFACE)
 target_include_directories(CSICS INTERFACE ${INCLUDE_DIR})
-target_link_libraries(CSICS INTERFACE ${COMPONENTS})
+target_link_libraries(CSICS INTERFACE ${COMPONENTS} ${CSICS_DEBUG_LIBS})
+target_compile_options(CSICS INTERFACE ${CSICS_COMPILE_FLAGS})
+target_link_options(CSICS INTERFACE ${CSICS_LINKER_FLAGS})
 
 
 message(STATUS "CSICS build configuration:")

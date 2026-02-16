@@ -40,7 +40,7 @@ struct RadioDeviceArgs;
 
 #ifdef CSICS_USE_UHD
 struct UsrpArgs {
-    const char* device_args;
+    const char* device_args = "";
     UsrpArgs() = default;
     UsrpArgs(const char* args) : device_args(args) {}
     operator RadioDeviceArgs() const;
