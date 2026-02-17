@@ -45,6 +45,7 @@ add_executable(tests ${TESTS})
 target_link_libraries(tests PRIVATE GTest::gtest_main GTest::gmock_main CSICS test_utils ${LIBS})
 
 target_compile_options(tests PRIVATE ${CSICS_COMPILE_FLAGS})
+target_link_options(tests PRIVATE ${CMAKE_LINKER_FLAGS})
 if (CMAKE_GENERATOR MATCHES "Xcode")
     set(CMAKE_GTEST_DISCOVER_TESTS_DISCOVERY_MODE PRE_BUILD)
     add_test(NAME csics_tests COMMAND tests)
