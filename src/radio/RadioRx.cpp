@@ -18,6 +18,9 @@ inline bool find_usrp() {
 
 inline std::unique_ptr<USRPRadioRx> create_usrp(const RadioDeviceArgs& dv,
                                                 const RadioConfiguration& cfg) {
+    if (!find_usrp()) {
+        return nullptr;
+    }
     auto pRadio = std::make_unique<USRPRadioRx>(dv);
     pRadio->set_configuration(cfg);
     return pRadio;
