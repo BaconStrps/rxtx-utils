@@ -14,6 +14,17 @@ TEST(CSICSRadioTests, UHDBasicTest) {
     if (radio == nullptr) {
         GTEST_SKIP() << "Failed to create USRP radio receiver. Is a USRP device connected?";
     }
+    radio->set_center_frequency(2.4e9);
+    auto cf = radio->get_center_frequency();
+    ASSERT_EQ(cf, 2.4e9) << "Center frequency set does not match expected value. Expected: 2.4e9, Got: " << cf;
+    radio->set_sample_rate(1e6);
+    auto sr = radio->get_sample_rate();
+    ASSERT_EQ(sr, 1e6) << "Sample rate set does not match expected value. Expected: 1e6, Got: " << sr;
+    radio->set_gain(30.0);
+    auto gain = radio->get_gain();
+    ASSERT_EQ(gain, 30.0) << "Gain set does not match expected value. Expected: 30.0, Got: " << gain;
+
+
 }
 
 TEST(CSICSRadioTests, UHDBasicRxTest) {
