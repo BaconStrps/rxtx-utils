@@ -18,7 +18,7 @@ class BufferView {
     using const_iterator = const char*;
 
     const char* data() const noexcept { return buf_; }
-    const std::size_t size() const noexcept { return size_; }
+     std::size_t size() const noexcept { return size_; }
     char* data() noexcept { return buf_; }
 
     const uint8_t* u8() const noexcept { return reinterpret_cast<const uint8_t*>(buf_); }
@@ -80,7 +80,21 @@ class BufferView {
             size_ -= offset;
         }
         return *this;
-    };
+    }
+
+    BufferView& operator++() noexcept {
+        if (!empty()) {
+            ++buf_;
+            --size_;
+        }
+        return *this;
+    }
+
+    BufferView operator++(int) noexcept {
+        BufferView temp = *this;
+        ++(*this);
+        return temp;
+    }
 
     char& operator[](std::size_t index) noexcept { return buf_[index]; }
     const char& operator[](std::size_t index) const noexcept {
@@ -101,24 +115,24 @@ class BufferView {
     const char* cend() const noexcept { return buf_ + size_; }
 
     explicit BufferView(void* buf, std::size_t size)
-        : buf_(reinterpret_cast<char*>(buf)), size_(size) {};
-    BufferView() : buf_(nullptr), size_(0) {};
+        : buf_(reinterpret_cast<char*>(buf)), size_(size) {}
+    BufferView() : buf_(nullptr), size_(0) {}
 
     BufferView(const BufferView& other) noexcept
-        : buf_(other.buf_), size_(other.size_) {};
+        : buf_(other.buf_), size_(other.size_) {}
     BufferView& operator=(const BufferView& other) noexcept {
         if (this != &other) {
             buf_ = other.buf_;
             size_ = other.size_;
         }
         return *this;
-    };
+    }
 
     BufferView(BufferView&& other) noexcept
         : buf_(other.buf_), size_(other.size_) {
         other.buf_ = nullptr;
         other.size_ = 0;
-    };
+    }
     BufferView& operator=(BufferView&& other) noexcept {
         if (this != &other) {
             buf_ = other.buf_;
@@ -127,7 +141,7 @@ class BufferView {
             other.size_ = 0;
         }
         return *this;
-    };
+    }
 
     template<typename T>
         requires BufferType<T>
@@ -139,7 +153,7 @@ class BufferView {
             buf_ = reinterpret_cast<char*>(vec.data());
             size_ = vec.size() * sizeof(T);
         }
-    };
+    }
 
    private:
     char* buf_;
@@ -158,7 +172,7 @@ class TypedView {
             return TypedView(nullptr, 0);
         }
         return TypedView(reinterpret_cast<T*>(const_cast<void*>(data)), size / sizeof(T));
-    };
+    }
 
     template <typename U>
     TypedView<U> as() const noexcept {
@@ -166,12 +180,12 @@ class TypedView {
             return TypedView<U>();
         }
         return TypedView<U>(reinterpret_cast<U*>(buf_), size_ * sizeof(T) / sizeof(U));
-    };
+    }
 
     template <typename U>
     operator std::span<U>() const noexcept {
         return std::span<U>(reinterpret_cast<U*>(buf_), size_ * sizeof(T) / sizeof(U));
-    };
+    }
 
     const T* data() const noexcept { return buf_; }
     std::size_t size() const noexcept { return size_; }
@@ -243,7 +257,7 @@ class TypedView {
             size_ -= offset;
         }
         return *this;
-    };
+    }
 
     T& operator[](std::size_t index) noexcept { return buf_[index]; }
     const T& operator[](std::size_t index) const noexcept {
@@ -261,7 +275,7 @@ class TypedView {
     const_iterator cbegin() const noexcept { return buf_; }
     const_iterator cend() const noexcept { return buf_ + size_; }
 
-    constexpr TypedView() : buf_(nullptr), size_(0) {};
+    constexpr TypedView() : buf_(nullptr), size_(0) {}
     template <BufferType U>
     constexpr TypedView(std::vector<U>& vec) noexcept {
         if (vec.empty() || sizeof(U) != sizeof(T)) {
@@ -271,13 +285,13 @@ class TypedView {
             buf_ = reinterpret_cast<T*>(vec.data());
             size_ = vec.size() * sizeof(U);
         }
-    };
+    }
 
     constexpr TypedView(T* data, std::size_t size) noexcept
-        : buf_(data), size_(size) {};
+        : buf_(data), size_(size) {}
 
     constexpr TypedView(const TypedView& other) noexcept
-        : buf_(other.buf_), size_(other.size_) {};
+        : buf_(other.buf_), size_(other.size_) {}
 
     constexpr TypedView& operator=(const TypedView& other) noexcept {
         if (this != &other) {
@@ -285,13 +299,13 @@ class TypedView {
             size_ = other.size_;
         }
         return *this;
-    };
+    }
 
     constexpr TypedView(TypedView&& other) noexcept
         : buf_(other.buf_), size_(other.size_) {
         other.buf_ = nullptr;
         other.size_ = 0;
-    };
+    }
 
     constexpr TypedView& operator=(TypedView&& other) noexcept {
         if (this != &other) {
@@ -301,7 +315,7 @@ class TypedView {
             other.size_ = 0;
         }
         return *this;
-    };
+    }
 
    private:
     T* buf_;
@@ -325,7 +339,7 @@ class Buffer {
     Buffer(std::size_t size)
         : capacity_(adjust_capacity(size)),
           size_(size),
-          buf_(::operator new(capacity_, std::align_val_t{Alignment})) {};
+          buf_(::operator new(capacity_, std::align_val_t{Alignment})) {}
 
     ~Buffer() { operator delete(buf_, std::align_val_t{Alignment}); }
 
@@ -334,13 +348,13 @@ class Buffer {
         buf_ =
             ::operator new(capacity_ * sizeof(T), std::align_val_t{Alignment});
         std::memcpy(buf_, other.buf_, size_ * sizeof(T));
-    };
+    }
 
     Buffer(Buffer&& other) noexcept
         : capacity_(other.capacity_), size_(other.size_), buf_(other.buf_) {
         other.buf_ = nullptr;
         other.size_ = 0;
-    };
+    }
 
     Buffer& operator=(const Buffer& other) {
         if (this != &other) {
@@ -351,7 +365,7 @@ class Buffer {
             std::memcpy(buf_, other.buf_, size_ * sizeof(T));
         }
         return *this;
-    };
+    }
 
     Buffer& operator=(Buffer&& other) noexcept {
         if (this != &other) {
@@ -362,7 +376,7 @@ class Buffer {
             other.size_ = 0;
         }
         return *this;
-    };
+    }
 
     T* data() noexcept { return buf_; }
     const T* data() const noexcept { return buf_; }
@@ -383,7 +397,7 @@ class Buffer {
             length = size_ - offset;
         }
         return BufferView(buf_ + offset, length);
-    };
+    }
 
     void resize(std::size_t new_size) {
         if (new_size > capacity_) {

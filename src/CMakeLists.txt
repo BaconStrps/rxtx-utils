@@ -20,3 +20,8 @@ if (CSICS_BUILD_IO)
     add_subdirectory(io)
     add_library(CSICS::io ALIAS io)
 endif()
+
+if (CSICS_BUILD_SERIALIZATION)
+    add_subdirectory(serialization)
+    add_library(CSICS::serialization ALIAS serialization)
+endif()
