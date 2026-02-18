@@ -51,6 +51,10 @@ if (CSICS_BUILD_SERIALIZATION)
     list(APPEND TESTS serialization/json_serialization_test.cpp)
 endif()
 
+if (CSICS_BUILD_LINALG)
+    list(APPEND TESTS linalg/static_lib_test.cpp)
+endif()
+
 add_executable(tests ${TESTS})
 target_link_libraries(tests PRIVATE GTest::gtest_main GTest::gmock_main CSICS test_utils ${LIBS})
 

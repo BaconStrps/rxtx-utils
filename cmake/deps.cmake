@@ -1,3 +1,7 @@
+set(INTERNAL_INCLUDES
+    ${CMAKE_CURRENT_SOURCE_DIR}/vendor/eigen
+)
+
 if (CSICS_USE_UHD)
     set(CMAKE_FIND_PACKAGE_PREFER_CONFIG ON)
     find_package(UHD)
