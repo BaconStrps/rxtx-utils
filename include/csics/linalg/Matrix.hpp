@@ -106,7 +106,6 @@ class Matrix {
 template <SmallMatrix Mat, std::size_t... Is>
 constexpr auto mat_add_impl(Mat&& a, Mat&& b, std::index_sequence<Is...>) {
     using Tp = std::remove_cvref_t<Mat>;
-    using T = typename Tp::value_type;
     return Tp{(std::forward<Mat>(a).template get<Is>() +
                std::forward<Mat>(b).template get<Is>())...};
 }
@@ -121,7 +120,6 @@ constexpr auto operator+(Mat&& a, Mat&& b) {
 template <SmallMatrix Mat, std::size_t... Is>
 constexpr auto mat_sub_impl(Mat&& a, Mat&& b, std::index_sequence<Is...>) {
     using Tp = std::remove_cvref_t<Mat>;
-    using T = typename Tp::value_type;
     return Tp{(std::forward<Mat>(a).template get<Is>() -
                std::forward<Mat>(b).template get<Is>())...};
 }
@@ -136,7 +134,6 @@ constexpr auto operator-(Mat&& a, Mat&& b) {
 template <SmallMatrix Mat, ScalarLike S, std::size_t... Is>
 constexpr auto mat_scalar_mul_impl(Mat&& m, S s, std::index_sequence<Is...>) {
     using Tp = std::remove_cvref_t<Mat>;
-    using T = typename Tp::value_type;
     return Tp{(std::forward<Mat>(m).template get<Is>() * s)...};
 }
 
@@ -159,7 +156,6 @@ constexpr auto operator*(S s, Mat&& m) {
 template <SmallMatrix Mat, ScalarLike S, std::size_t... Is>
 constexpr auto mat_scalar_div_impl(Mat&& m, S s, std::index_sequence<Is...>) {
     using Tp = std::remove_cvref_t<Mat>;
-    using T = typename Tp::value_type;
     return Tp{(std::forward<Mat>(m).template get<Is>() / s)...};
 }
 
