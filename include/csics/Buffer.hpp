@@ -344,7 +344,7 @@ class Buffer {
     using iterator = T*;
     using const_iterator = const T*;
 
-    constexpr Buffer() : buf_(nullptr), size_(0) {}
+    constexpr Buffer() : size_(0), buf_(nullptr) {}
     Buffer(std::size_t size)
         : capacity_(adjust_capacity(size)),
           size_(size),
@@ -441,6 +441,8 @@ class Buffer {
         return subview(offset, length);
     }
 
+    operator bool() const noexcept { return buf_ != nullptr && size_ > 0; }
+
     T* begin() noexcept { return buf_; }
     T* end() noexcept { return buf_ + size_; }
     const T* cbegin() const noexcept { return buf_; }
@@ -464,6 +466,8 @@ class Buffer {
     }
 };
 
+class String;
+
 class StringView {
    public:
     using value_type = char;
@@ -475,9 +479,22 @@ class StringView {
 
     bool empty() const noexcept { return size_ == 0; }
 
+    template <std::size_t N>
+    constexpr StringView(const char (&str)[N]) : buf_(str), size_(N - 1) {}
+
     StringView(const char* str) : buf_(str), size_(std::strlen(str)) {}
+    StringView(char* str) : buf_(str), size_(std::strlen(str)) {}
     StringView(const char* str, std::size_t size) : buf_(str), size_(size) {}
     StringView() : buf_(nullptr), size_(0) {}
+    StringView(const StringView& other)
+        : buf_(other.buf_), size_(other.size_) {}
+    StringView& operator=(const StringView& other) {
+        if (this != &other) {
+            buf_ = other.buf_;
+            size_ = other.size_;
+        }
+        return *this;
+    }
 
     StringView subview(std::size_t offset, std::size_t length) const noexcept {
         if (offset >= size_) {
@@ -503,11 +520,9 @@ class StringView {
         return StringView(buf_ + (size_ - length), length);
     }
 
-    operator bool() const noexcept { return buf_ != nullptr && size_ > 0; }
+    String str() const;
 
-    bool operator==(const StringView& other) const noexcept {
-        return buf_ == other.buf_ && size_ == other.size_;
-    }
+    operator bool() const noexcept { return buf_ != nullptr && size_ > 0; }
 
     bool operator!=(const StringView& other) const noexcept {
         return !(*this == other);
@@ -549,7 +564,11 @@ class StringView {
 class String {
    public:
     String() : buf_(0) {}
-    String(const StringView& v) : buf_(v.data(), v.size()) {}
+    explicit String(const StringView& v) : buf_() {
+        buf_.resize(v.size() + 1);
+        std::memcpy(buf_.data(), v.data(), v.size());
+        buf_[v.size()] = '\0';
+    }
     String(const String& other) : buf_(other.buf_) {}
     String& operator=(const String& other) {
         if (this != &other) {
@@ -557,6 +576,11 @@ class String {
         }
         return *this;
     }
+
+    explicit String(const char* str) : String(StringView(str)) {}
+    explicit String(char* str) : String(StringView(str)) {}
+    explicit String(const char* str, std::size_t size) : String(StringView(str, size)) {}
+    explicit String(char* str, std::size_t size) : String(StringView(str, size)) {}
 
     String(String&& other) noexcept : buf_(std::move(other.buf_)) {}
     String& operator=(String&& other) noexcept {
@@ -566,37 +590,39 @@ class String {
         return *this;
     }
 
-        operator StringView() const noexcept { return StringView(buf_.data(), buf_.size()); }
-    
-        std::size_t size() const noexcept { return buf_.size(); }
-    
-        char operator[](std::size_t index) const noexcept { return buf_[index]; }
-    
-        String operator()(std::size_t offset,
-                        std::size_t length) const noexcept {
-            return String(StringView(buf_.data() + offset, length));
-        }
-    
-        const char* begin() const noexcept { return buf_.data(); }
-        const char* end() const noexcept { return buf_.data() + buf_.size(); }
+    operator StringView() const noexcept {
+        return StringView(buf_.data(), buf_.size());
+    }
 
-        bool operator==(const String& other) const noexcept {
-            // sue me
-            return std::memcmp(buf_.data(), other.buf_.data(), std::min(buf_.size(), other.buf_.size())) == 0 &&
-                   buf_.size() == other.buf_.size();
-        }
+    std::size_t size() const noexcept { return buf_.size(); }
 
-        bool operator!=(const String& other) const noexcept {
-            return !(*this == other);
-        }
+    const char* c_str() const noexcept { return buf_.data(); }
+    const char* data() const noexcept { return buf_.data(); }
 
-        bool operator==(const StringView& other) const noexcept {
-            return std::memcmp(buf_.data(), other.data(), std::min(buf_.size(), other.size())) == 0 &&
-                   buf_.size() == other.size();
-        }
+    char operator[](std::size_t index) const noexcept { return buf_[index]; }
+
+    String operator()(std::size_t offset, std::size_t length) const noexcept {
+        return String(StringView(buf_.data() + offset, length));
+    }
+
+    const char* begin() const noexcept { return buf_.data(); }
+    const char* end() const noexcept { return buf_.data() + buf_.size(); }
+
+    bool operator!=(const String& other) const noexcept {
+        return !(*this == other);
+    }
+
+    operator bool() const noexcept { return buf_; }
 
    private:
     Buffer<char> buf_;
 };
+
+inline bool operator==(const StringView& a, const StringView& o) noexcept {
+    return a.size() == o.size() &&
+           std::memcmp(a.data(), o.data(), a.size()) == 0;
+}
+
+inline String StringView::str() const { return String(*this); }
 
 };  // namespace csics

@@ -1,4 +1,7 @@
 #pragma once
+#ifndef CSICS_BUILD_IO
+#error "IO support is not enabled. Please define CSICS_BUILD_IO to use encoding/decoding features."
+#endif
 #include <cstddef>
 #include <cstdint>
 namespace csics::io::encdec {

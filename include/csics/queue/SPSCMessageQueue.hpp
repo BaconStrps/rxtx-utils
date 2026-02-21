@@ -10,15 +10,18 @@ class SPSCMessageQueue {
     ~SPSCMessageQueue() = default;
 
     [[nodiscard]]
-    std::optional<T> try_pop() {
+    SPSCError try_pop(T& msg) {
         SPSCQueue::ReadSlot slot;
         auto ret = queue_.acquire_read(slot);
         if (ret != SPSCError::None) {
-            return std::nullopt;
+            return ret;
         }
-        T* data = slot.as<T>();
-        T value = std::move(*data);
-        return value;
+        T* value_ptr = reinterpret_cast<T*>(slot.data);
+        // Move the value out of the slot and destroy the original
+        msg = std::move(*value_ptr);
+        value_ptr->~T();
+        queue_.commit_read(std::move(slot));
+        return SPSCError::None;
     }
 
     [[nodiscard]]
@@ -43,6 +46,10 @@ class SPSCMessageQueue {
         new (slot.data) T(std::move(value));
         queue_.commit_write(std::move(slot));
         return SPSCError::None;
+    }
+
+    inline bool empty() const noexcept {
+        return queue_.empty();
     }
 
        private:

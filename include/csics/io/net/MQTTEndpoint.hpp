@@ -16,19 +16,32 @@ class MQTTMessage {
     ~MQTTMessage();
     MQTTMessage(const MQTTMessage&) = delete;
     MQTTMessage& operator=(const MQTTMessage&) = delete;
-    MQTTMessage(MQTTMessage&& other) noexcept;
-    MQTTMessage& operator=(MQTTMessage&& other) noexcept;
+    MQTTMessage(MQTTMessage&& other) noexcept = default;
+    MQTTMessage& operator=(MQTTMessage&& other) noexcept = default;
 
-    StringView topic() const { return topic_; }
-    BufferView payload() const { return payload_; }
+    const StringView topic() const { return StringView(topic_); }
+    const BufferView payload() const { return payload_; }
+    void topic(StringView topic) { topic_ = topic; }
+    void payload(BufferView payload) { payload_ = payload; }
+
+    void retain(bool retain) { retained_ = retain; }
+    void qos(int qos) { qos_ = qos; }
 
    private:
+    // these can be views because MQTT allocates its own memory for these 
+    // and we can just point to it
     BufferView payload_;
     StringView topic_;
+    void* internal_msg_;  // pointer to the MQTTAsync_message struct for cleanup if needed
+    int qos_;
+    bool retained_;
+
+    friend class MQTTEndpoint;
 };
 
 class MQTTEndpoint {
    public:
+    struct Internal;
     using ConnectionParams = URI;
 
     MQTTEndpoint(BufferView client_id);
@@ -39,16 +52,21 @@ class MQTTEndpoint {
     MQTTEndpoint& operator=(MQTTEndpoint&& other) noexcept;
 
     NetStatus connect(const URI& broker_uri);
-    NetResult publish(const MQTTMessage& message);
+    NetResult publish(MQTTMessage&& message);
 
     NetStatus subscribe(const StringView topic);
 
-    NetResult recv(MQTTMessage& message);
+    NetStatus recv(const StringView topic, MQTTMessage& message);
 
-    PollStatus poll(int timeoutMs);
+    PollStatus poll(const StringView topic, int timeoutMs);
+
+    static void conn_lost(void* context, char* cause);
+    static int msg_arvd(void* context, char* topicName, int topicLen,
+                                void* message);
+    static void dlv_cmplt(void* context, int token);
 
    private:
-    struct Internal;
     Internal* internal_;
+
 };
 };  // namespace csics::io::net

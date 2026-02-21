@@ -75,6 +75,11 @@ class SPSCQueue {
         return WriteHandle(*this);
     }
 
+    inline bool empty() const noexcept {
+        return read_index_.load(std::memory_order_acquire) ==
+               write_index_.load(std::memory_order_acquire);
+    }
+
    private:
     std::size_t capacity_;
     std::byte* buffer_;

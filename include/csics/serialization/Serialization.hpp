@@ -1,7 +1,9 @@
 
 #pragma once
 
-// #include <csics/io/Buffer.hpp>
+#ifndef CSICS_BUILD_SERIALIZATION
+#error "Serialization support is not enabled. Please define CSICS_BUILD_SERIALIZATION to use serialization."
+#endif
 #include <concepts>
 #include <string_view>
 #include <tuple>
